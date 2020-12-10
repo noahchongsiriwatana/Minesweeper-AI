@@ -1,0 +1,22 @@
+@keyframes fade-in {
+	from {background-color: black;}
+	to {background-color: grey;}
+}
+
+body {
+	background-color: grey;
+	animation-name: fade-in;
+	animation-duration: 3s;
+	font-family: "Courier", monospace;
+	margin: 5%;
+}
+
+canvas {
+	background-color: black;
+	display: inline;
+}
+
+#h-cent {
+	width: 100%;
+	text-align:center;
+}
