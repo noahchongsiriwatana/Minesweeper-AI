@@ -14,12 +14,6 @@ function runMinesweeper(canvID, width) {
 	ctx.fill();
 	ctx.closePath();
 	
-	canvas.addEventListener(
-		"dblclick",
-		function(e) {
-			alert("hi");
-		}
-	);
 	var sqNum = 10;
 	var freq = 5;
 	var sqLen = width / sqNum;
@@ -55,7 +49,12 @@ function newGame(size, mineRatio) {
 }
 
 /*
+ * Draws a square.
  *
+ * Parameters:
+ * ctx is the canvas context to draw the square on.
+ * pos is the relative position of the top right corner.
+ * width is the width of the square.
  */
 function drawSquare(ctx, pos, width) {
 	ctx.beginPath();
@@ -64,7 +63,11 @@ function drawSquare(ctx, pos, width) {
 }
 
 /*
+ * Begins listening to user actions in a game.
  *
+ * Parameters:
+ * canvas is the canvas where the game is drawn.
+ * game is the representative array for the game.
  */
 function gameListen(canvas, game) {
 	canvas.addEventListener(
@@ -77,7 +80,12 @@ function gameListen(canvas, game) {
 }
 
 /*
+ * Finds the square in a game which is clicked on by the user.
  *
+ * Parameters:
+ * canvas is the canvas where the game is drawn.
+ * game is the representative array for the game.
+ * e is the click event.
  */
 function getLoc(canvas, game, e) {
 	var rect = canvas.getBoundingClientRect();
