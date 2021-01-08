@@ -8,13 +8,14 @@
 function runMinesweeper(canvID, width) {
 	var canvas = document.getElementById(canvID);
 	var ctx = canvas.getContext("2d");
+	ctx.font = "30px courier";
 	ctx.beginPath();
 	ctx.rect(0, 0, width, width);
 	ctx.fillStyle = "white";
 	ctx.fill();
 	ctx.closePath();
-	var sqNum = 10;
-	var freq = 5;
+	var sqNum = 12;
+	var freq = 4;
 	var sqLen = width / sqNum;
 	for (i = 0; i < sqNum; ++i) {
 		for (j = 0; j < sqNum; ++j) {
@@ -41,7 +42,7 @@ function newGame(size, mineRatio) {
 	for (var i = 0; i < size; ++i) {
 		game[i] = new Array(size);
 		for (var j = 0; j < size; ++j) {
-			Math.round(Math.random() * mineRatio) < 1 ? game[i][j] = 1 : game[i][j] = 0;
+			Math.round(Math.random() * (mineRatio - 1)) < 1 ? game[i][j] = 1 : game[i][j] = 0;
 		}
 	}
 	return game;
@@ -61,6 +62,18 @@ function drawSquare(ctx, pos, width) {
 	ctx.rect(pos.x, pos.y, width, width);
 	ctx.stroke();
 	ctx.fillStyle = "white";
+	ctx.fill();
+}
+
+/*
+ *
+ */
+function drawClean(ctx, pos, width) {
+	width -= 1;
+	ctx.beginPath();
+	ctx.rect(pos.x, pos.y, width, width);
+	ctx.stroke();
+	ctx.fillStyle = "grey";
 	ctx.fill();
 }
 
@@ -92,6 +105,53 @@ function drawFlag(ctx, pos, width) {
 }
 
 /*
+ *
+ */
+function drawMine(ctx, pos, width) {
+	drawSquare(ctx, pos, width);
+	ctx.fillStyle = "black";
+	ctx.beginPath();
+	ctx.arc(pos.x + width / 2, pos.y + width / 2, width / 4, 0, Math.PI * 2);
+	ctx.fill();
+}
+
+/*
+ *
+ */
+function drawCleanNum(ctx, pos, width, num) {
+	drawClean(ctx, pos, width);
+	ctx.textBaseline = "middle";
+	switch (num) {
+		case 1:
+			color = "blue";
+			break;
+		case 2:
+			color = "green";
+			break;
+		case 3:
+			color = "red";
+			break;
+		case 4:
+			color = "purple";
+			break;
+		case 5:
+			color = "yellow";
+			break;
+		case 6:
+			color = "teal";
+			break;
+		case 7:
+			color = "darkslategrey";
+			break;
+		case 8:
+			color = "slategrey";
+			break;
+	}
+	ctx.fillStyle = color;
+	ctx.fillText(num, pos.x + width / 3, pos.y + width / 2);
+}
+
+/*
  * Begins listening to user actions in a game.
  *
  * Parameters:
@@ -103,7 +163,7 @@ function gameListen(canvas, game) {
 		'click',
 		function(e) {
 			var loc = getLoc(canvas, game, e);
-			alert(loc.x + ", " + loc.y);
+			alertClean(canvas, game, loc);
 		}
 	);
 	
@@ -135,6 +195,70 @@ function getLoc(canvas, game, e) {
 }
 
 /*
+ *
+ */
+function alertClean(canvas, game, loc) {
+	ctx = canvas.getContext('2d');
+	rect = canvas.getBoundingClientRect();
+	width = rect.width / game.length;
+	switch (game[loc.x][loc.y]) {
+		case 1:
+		case 2:
+			for (var i = 0; i < game.length; ++i) {
+				for (var j = 0; j < game[0].length; ++j) {
+					newLoc = {
+						x: i,
+						y: j
+					};
+					if (isBomb(game, newLoc)) {
+						pos = {
+							x: i * width,
+							y: j * width
+						}
+						drawMine(ctx, pos, width);
+					}
+				}
+			}
+			youLose(canvas, game);
+			break;
+		case 0:
+		case -1:
+			cleanSpread(canvas, game, loc);
+			break;
+	}
+}
+
+/*
+ *
+ */
+function cleanSpread(canvas, game, loc) {
+	ctx = canvas.getContext('2d');
+	rect = canvas.getBoundingClientRect();
+	width = rect.width / game.length;
+	pos = locToPos(loc, width);
+	count = bombCount(game, loc);
+	game[loc.x][loc.y] = 3;
+	if (count == 0) {
+		drawClean(ctx, pos, width);
+		for (var i = -1; i < 2; ++i) {
+			for (var j = -1; j < 2; ++j) {
+				newLoc = {
+					x: loc.x + i,
+					y: loc.y + j
+				};
+				if (!isBomb(game, newLoc) && !offEdge(game, newLoc)) {
+					if (game[newLoc.x][newLoc.y] != 3) {
+						cleanSpread(canvas, game, newLoc);
+					}
+				}
+			}
+		}
+	} else {
+		drawCleanNum(ctx, pos, width, count);
+	}
+}
+
+/*
  * Handles the right click actions.
  *
  * Parameters:
@@ -151,6 +275,9 @@ function alertMine(canvas, game, loc) {
 		case 0:
 			game[loc.x][loc.y] = -1;
 			drawFlag(ctx, pos, width);
+			if (isWon(game)) {
+				youWin(canvas, game);
+			}
 			break;
 		case -1:
 			game[loc.x][loc.y] = 0;
@@ -163,6 +290,7 @@ function alertMine(canvas, game, loc) {
 		case 2:
 			game[loc.x][loc.y] = 1;
 			drawSquare(ctx, pos, width);
+			break;
 	}
 }
 
@@ -180,3 +308,85 @@ function locToPos(loc, width) {
 	};
 }
 
+/*
+ *
+ */
+function youLose(canvas, game) {
+	ctx = canvas.getContext('2d');
+	rect = canvas.getBoundingClientRect();
+	center = rect.width / 2;
+	ctx.fillText("ggwp", center, center);
+	restart(canvas);
+}
+
+/*
+ *
+ */
+function youWin(canvas, game) {
+	ctx = canvas.getContext('2d');
+	rect = canvas.getBoundingClientRect();
+	center = rect.width / 2;
+	ctx.fillText("ggwp", center, center);
+	restart(canvas);
+}
+
+/*
+ *
+ */
+function restart(canvas) {
+	newCanvas = canvas.cloneNode(true);
+	canvas.parentNode.replaceChild(newCanvas, canvas);
+	runMinesweeper(newCanvas.id, rect.width);
+}
+
+/*
+ *
+ */
+function isBomb(game, loc) {
+	if (offEdge(game, loc)) {
+		return false;
+	}
+	result = (game[loc.x][loc.y] == 1) || (game[loc.x][loc.y] == 2);
+	return result;
+}
+
+/*
+ *
+ */
+function offEdge(game, loc) {
+	return loc.x < 0 || loc.x >= game.length || loc.y < 0 || loc.y >= game.length;
+}
+
+/*
+ *
+ */
+function bombCount(game, loc) {
+	count = 0;
+	for (var i = -1; i < 2; ++i) {
+		for (var j = -1; j < 2; ++j) {
+			newLoc = {
+				x: loc.x + i,
+				y: loc.y + j
+			};
+			if (isBomb(game, newLoc)) {
+				++count;
+			}
+		}
+	}
+	return count;
+}
+
+/*
+ *
+ */
+function isWon(game) {
+	win = true;
+	for (var i = 0; i < game.length; ++i) {
+		for (var j = 0; j < game[0].length; ++j) {
+			if (game[i][j] == 0) {
+				return false;
+			}
+		}
+	}
+	return win;
+}
